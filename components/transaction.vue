@@ -1,5 +1,36 @@
 <script setup>
-const { currency } = useCurrency(3000);
+const props = defineProps({
+  transaction: Object,
+});
+
+const { currency } = useCurrency(props.transaction.amount);
+
+const isLoading = ref(false);
+const toast = useToast();
+const supabase = useSupabaseClient();
+const emit = defineEmits(['deleted']);
+
+const deleteTransaction = async () => {
+  isLoading.value = true;
+  try {
+    await supabase.from("transactions").delete().eq("id", props.transaction.id);
+
+    toast.add({
+      title: "Transaction deleted",
+      icon: "i-heroicons-check-circle",
+    });
+
+    emit("deleted", props.transaction.id);
+
+  } catch (error) {
+    toast.add({
+      title: "Transaction deleted",
+      icon: "i-heroicons-exclamation-circle",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const items = [
   [
@@ -13,10 +44,19 @@ const items = [
     {
       label: "Delete",
       icon: "i-heroicons-trash-20-solid",
-      click: () => console.log("Delete"),
+      click: deleteTransaction,
     },
   ],
 ];
+
+const isIncome = computed(() => props.transaction.type == "Income");
+const icon = computed(() =>
+  isIncome.value ? "i-heroicons-arrow-up-right" : "i-heroicons-arrow-down-left"
+);
+
+const iconColor = computed(() =>
+  isIncome.value ? "text-green-600" : "text-red-600"
+);
 </script>
 
 <template>
@@ -25,10 +65,14 @@ const items = [
   >
     <div class="flex justify-between items-center">
       <div class="flex items-center space-x-1">
-        <UIcon name="i-heroicons-arrow-up-right" class="text-green-600" />
-        <div>Salary</div>
+        <UIcon :name="icon" :class="[iconColor]" />
+        <div>{{ transaction.description }}</div>
       </div>
-      <div>Cat</div>
+      <div>
+        <UBadge color="white" v-if="transaction.category">{{
+          transaction.category
+        }}</UBadge>
+      </div>
     </div>
 
     <div class="flex items-center justify-end space-x-2">
@@ -39,11 +83,11 @@ const items = [
             color="white"
             variant="ghost"
             trailing-icon="i-heroicons-ellipsis-horizontal"
+            :loading="isLoading"
           />
         </UDropdown>
       </div>
     </div>
-
   </div>
 </template>
 
