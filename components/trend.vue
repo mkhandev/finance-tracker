@@ -7,6 +7,8 @@ const props = defineProps({
   loading: Boolean,
 });
 
+const { amount } = toRefs(props)
+
 const trendingUp = computed(() => props.amount >= props.lastAmount);
 
 const icon = computed(() => {
@@ -26,7 +28,7 @@ const percentageTrend = computed(() => {
   return `${Math.ceil(ratio)} %`;
 });
 
-const { currency } = useCurrency(props.amount);
+const { currency } = useCurrency(amount);
 </script>
 
 <template>
