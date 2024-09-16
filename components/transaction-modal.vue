@@ -2,6 +2,8 @@
 import { categories, types } from "../constanst";
 import { z } from "zod";
 
+const { toastSuccess, toastError } = useAppToast();
+
 const props = defineProps({
   modelValue: Boolean,
 });
@@ -63,7 +65,6 @@ const schema = z.intersection(
 const form = ref();
 const isLoading = ref(false);
 const supabase = useSupabaseClient();
-const toast = useToast()
 
 const save = async () => {
   if (form.value.errors.length) return;
@@ -74,10 +75,9 @@ const save = async () => {
     const { error } = await supabase.from("transactions").upsert({ ...state.value });
 
     if (!error) {
-      toast.add({
-        title: "Transaction saved",
-        icon: "i-heroicons-check-circle",
-      });
+      toastSuccess({
+        title: 'Transaction saved'
+      })
 
       isOpen.value = false;
       emit("saved");
@@ -87,12 +87,11 @@ const save = async () => {
     throw error
 
   } catch (e) {
-    toast.add({
+    toastError({
       title: 'Transaction not saved',
       description: e.message,
-      icon: 'i-heroicons-exclamation-circle',
-      color: 'red'
     })
+
   } finally {
     isLoading.value = false
   }

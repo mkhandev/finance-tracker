@@ -1,113 +1,86 @@
 import { format, addDays } from "date-fns";
-import { ref, computed, watch } from "vue"; // Ensure you are importing required functions
 
 export const useFetchTransactions = (period) => {
-  const supabase = useSupabaseClient(); // Assuming you have Supabase set up
-  const transactions = ref([]); // Reactive variable to store transactions
-  const pending = ref(false); // Reactive variable for loading state
+  const supabase = useSupabaseClient()
+  const transactions = ref([])
+  const pending = ref(false)
 
-  // Computed properties for income and expense transactions
-  const income = computed(() =>
-    transactions.value.filter((t) => t.type === "Income")
-  );
+  const income = computed(
+    () => transactions.value.filter(t => t.type === 'Income')
+  )
+  const expense = computed(
+    () => transactions.value.filter(t => t.type === 'Expense')
+  )
 
-  const expense = computed(() =>
-    transactions.value.filter((t) => t.type === "Expense")
-  );
+  const incomeCount = computed(() => income.value.length)
+  const expenseCount = computed(() => expense.value.length)
 
-  // Count the number of income and expense transactions
-  const incomeCount = computed(() => income.value.length);
-  const expenseCount = computed(() => expense.value.length);
+  const incomeTotal = computed(
+    () => income.value.reduce((sum, transaction) => sum + transaction.amount, 0)
+  )
+  const expenseTotal = computed(
+    () => expense.value.reduce((sum, transaction) => sum + transaction.amount, 0)
+  )
 
-  // Total amounts for income and expense transactions
-  const incomeTotal = computed(() => {
-    const total = income.value.reduce((sum, transaction) => sum + transaction.amount, 0);
-    console.log("Income Total Updated:", total); // Debugging output
-    return total;
-  });
-
-  const expenseTotal = computed(() => {
-    const total = expense.value.reduce((sum, transaction) => sum + transaction.amount, 0);
-    console.log("Expense Total Updated:", total); // Debugging output
-    return total;
-  });
-
-  // Fetch transactions based on the selected period
   const fetchTransactions = async () => {
-    pending.value = true;
-
+    pending.value = true
+    
     try {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select()
-        .gte("created_at::date", format(period.value.from, "yyyy-MM-dd"))
-        .lt(
-          "created_at::date",
-          format(addDays(period.value.to, 1), "yyyy-MM-dd")
-        )
-        .order("created_at", { ascending: false });
+      const { data } = await useAsyncData(`transactions-${period.value.from.toDateString()}-${period.value.to.toDateString()}`, async () => {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select()
+          //.gte('created_at', period.value.from.toISOString())
+          //.lte('created_at', period.value.to.toISOString())
+          .gte('created_at::date', format(period.value.from, 'yyyy-MM-dd'))
+          .lt('created_at::date', format(addDays(period.value.to, 1), 'yyyy-MM-dd'))
+          .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        return [];
-      }
+        if (error) return []
 
-      return data; // Return the fetched data
-    } catch (error) {
-      console.error("Unexpected error fetching transactions:", error);
-      return [];
+        return data
+      })
+
+      return data.value
     } finally {
-      pending.value = false; // Stop loading state
+      pending.value = false
     }
-  };
+  }
 
-  // Refresh function to update transactions
-  const refresh = async () => {
-    transactions.value = await fetchTransactions(); // Update the transactions array
-  };
+  const refresh = async () => transactions.value = await fetchTransactions()
 
-  // Watch the `period` for changes and refresh the data when it changes
-  watch(
-    period,
-    async () => {
-      console.log("Period changed:", period.value); // Debugging statement
-      await refresh(); // Refresh data when the period changes
-    },
-    { immediate: true } // Immediate flag to fetch transactions on initial load
-  );
+  watch(period, async () => await refresh())
 
-  // Group transactions by their creation date
   const transactionsGroupedByDate = computed(() => {
-    let grouped = {};
+    let grouped = {}
 
     for (const transaction of transactions.value) {
-      const date = transaction.created_at.split("T")[0]; // Extract the date part
+      const date = transaction.created_at.split('T')[0]
 
       if (!grouped[date]) {
-        grouped[date] = [];
+        grouped[date] = []
       }
 
-      grouped[date].push(transaction); // Add transaction to its date group
+      grouped[date].push(transaction)
     }
 
-    return grouped;
-  });
+    return grouped
+  })
 
-  // Return the relevant data and functions from the composable
   return {
     transactions: {
       all: transactions,
       grouped: {
-        byDate: transactionsGroupedByDate, // Grouped transactions by date
+        byDate: transactionsGroupedByDate
       },
-      income, // Computed income transactions
-      expense, // Computed expense transactions
-      incomeTotal, // Computed income total
-      expenseTotal, // Computed expense total
-      incomeCount, // Count of income transactions
-      expenseCount, // Count of expense transactions
+      income,
+      expense,
+      incomeTotal,
+      expenseTotal,
+      incomeCount,
+      expenseCount
     },
-    refresh, // Function to refresh data
-    pending, // Loading state
-  };
-};
+    refresh,
+    pending
+  }
+}
