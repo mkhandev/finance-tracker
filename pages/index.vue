@@ -117,9 +117,8 @@ const {
 
 await refreshPrevious();
 
-watch(selectedView, async (newView) => {
-  console.log("Selected View Changed:", newView); // Debugging output
-  await refresh();
-  await refreshPrevious();
-});
+// watch(selectedView, async (newView) => {
+//   await refresh();
+//   await refreshPrevious();
+// });
 </script>
