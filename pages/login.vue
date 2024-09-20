@@ -3,10 +3,10 @@ const success = ref(false);
 const email = ref("");
 const pending = ref(false);
 const supabase = useSupabaseClient();
-const { toastError } = useAppToast();
+const { toastSuccess, toastError } = useAppToast();
 
-//login check
-//useRedirectIfAuthenticated();
+//check login
+//const { fetchUser } = useRedirectIfAuthenticated();
 
 const handelLogin = async () => {
   pending.value = true;
@@ -18,18 +18,21 @@ const handelLogin = async () => {
       },
     });
 
-    if (error) {
-      toastError({
-        title: 'Error authenticating',
-        description: error.message
-      })
-    } else {
-      success.value = true;
-    }
+    if(error) throw error;
+
+  } catch (e) {
+    toastError({
+      title: "Error updating profile",
+      description: e.message,
+    });
   } finally {
     pending.value = false;
   }
 };
+
+// onMounted(() => {
+//   fetchUser();
+// });
 </script>
 
 <template>
@@ -59,5 +62,3 @@ const handelLogin = async () => {
     </div>
   </UCard>
 </template>
-
-<style></style>
