@@ -7,10 +7,7 @@
         :ui="{ item: { disabled: 'cursor-text select-text' }, width: 'w-64' }"
         :popper="{ placement: 'bottom-start' }"
       >
-        <UAvatar
-          src="https://avatars.githubusercontent.com/u/739984?v=4"
-          alt="Avatar"
-        />
+        <UAvatar :src="url" alt="Avatar" />
 
         <template #account="{ item }">
           <div class="text-left">
@@ -38,6 +35,8 @@
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 
+const { url } = useAvatarUrl();
+
 const items = [
   [
     {
@@ -50,14 +49,14 @@ const items = [
     {
       label: "Settings",
       icon: "i-heroicons-cog-8-tooth",
-      click: () => navigateTo('/settings/profile'),
+      click: () => navigateTo("/settings/profile"),
     },
     {
       label: "Sign out",
       icon: "i-heroicons-arrow-left-on-rectangle",
       click: async () => {
         await supabase.auth.signOut();
-        localStorage.removeItem('userData');
+        localStorage.removeItem("userData");
         return navigateTo("/login");
       },
     },
