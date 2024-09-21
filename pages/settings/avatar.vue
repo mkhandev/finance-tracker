@@ -21,7 +21,7 @@ const saveAvatar = async () => {
 
   try {
     uploading.value = true;
-    const currentAvatarUrl = user.value.user_metadata?.avatar_url;
+    const currentAvatarUrl = user.value?.user_metadata?.avatar_url;
 
     const { data, error } = await supabase.storage
       .from("avatars")

@@ -9,7 +9,7 @@ const pending = ref(false);
 const { toastSuccess, toastError } = useAppToast();
 
 const state = ref({
-  name: user.value.user_metadata?.full_name,
+  name: user.value?.user_metadata?.full_name,
   email: user.value?.email,
 });
 
