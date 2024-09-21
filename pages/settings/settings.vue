@@ -8,7 +8,7 @@ const user = useSupabaseUser();
 const pending = ref(false);
 
 const state = ref({
-  transactionView: user.value.user_metadata?.transaction_view ?? undefined,
+  transactionView: user.value?.user_metadata?.transaction_view ?? undefined,
 });
 
 const schema = z.object({

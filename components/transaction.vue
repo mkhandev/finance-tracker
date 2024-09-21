@@ -3,14 +3,15 @@ const props = defineProps({
   transaction: Object,
 });
 
-const { toastSuccess, toastError } = useAppToast();
+// Use toRefs to maintain reactivity
+const { transaction } = toRefs(props);
 
-const { currency } = useCurrency(props.transaction.amount);
+const { toastSuccess, toastError } = useAppToast();
 
 const isLoading = ref(false);
 
 const supabase = useSupabaseClient();
-const emit = defineEmits(["deleted"]);
+const emit = defineEmits(["deleted", "edited"]);
 
 const deleteTransaction = async () => {
   isLoading.value = true;
@@ -37,9 +38,7 @@ const items = [
     {
       label: "Edit",
       icon: "i-heroicons-pencil-square-20-solid",
-      click: () => {
-        console.log("Edit");
-      },
+      click: () => isOpen.value = true
     },
     {
       label: "Delete",
@@ -56,6 +55,19 @@ const icon = computed(() =>
 
 const iconColor = computed(() =>
   isIncome.value ? "text-green-600" : "text-red-600"
+);
+
+const isOpen = ref(false);
+
+// Watch for changes in props.amount and update currency
+const currency = ref('');
+watch(
+  () => props.transaction.amount,
+  (newAmount) => {
+    const { currency: formattedCurrency } = useCurrency(newAmount);
+    currency.value = formattedCurrency;
+  },
+  { immediate: true }
 );
 </script>
 
@@ -85,6 +97,7 @@ const iconColor = computed(() =>
             trailing-icon="i-heroicons-ellipsis-horizontal"
             :loading="isLoading"
           />
+          <TransactionModal v-model="isOpen" :transaction="transaction" @saved="emit('edited')" />
         </UDropdown>
       </div>
     </div>

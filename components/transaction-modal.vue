@@ -6,8 +6,15 @@ const { toastSuccess, toastError } = useAppToast();
 
 const props = defineProps({
   modelValue: Boolean,
+  transaction: {
+    type: Object,
+    required: false,
+  },
 });
-const emit = defineEmits(["update:modelValue", 'saved']);
+
+const isEditing = computed(() => !!props.transaction);
+
+const emit = defineEmits(["update:modelValue", "saved"]);
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -20,17 +27,23 @@ const isOpen = computed({
   },
 });
 
-const initialState = {
-  type: undefined,
-  amount: 0,
-  created_at: undefined,
-  description: undefined,
-  category: undefined,
-};
+const initialState = isEditing.value
+  ? {
+      type: props.transaction.type,
+      amount: props.transaction.amount,
+      created_at: props.transaction.created_at.split("T")[0],
+      description: props.transaction.description,
+      category: props.transaction.category,
+    }
+  : {
+      type: undefined,
+      amount: 0,
+      created_at: undefined,
+      description: undefined,
+      category: undefined,
+    };
 
-const state = ref({
-  ...initialState,
-});
+const state = ref({ ...initialState });
 
 const defaultSchema = z.object({
   created_at: z.string(),
@@ -72,28 +85,28 @@ const save = async () => {
   isLoading.value = true;
 
   try {
-    const { error } = await supabase.from("transactions").upsert({ ...state.value });
+    const { error } = await supabase
+      .from("transactions")
+      .upsert({ ...state.value, id: props.transaction?.id });
 
     if (!error) {
       toastSuccess({
-        title: 'Transaction saved'
-      })
+        title: "Transaction saved",
+      });
 
       isOpen.value = false;
       emit("saved");
       return;
     }
 
-    throw error
-
+    throw error;
   } catch (e) {
     toastError({
-      title: 'Transaction not saved',
+      title: "Transaction not saved",
       description: e.message,
-    })
-
+    });
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 };
 
@@ -101,12 +114,30 @@ const resetForm = () => {
   Object.assign(state.value, initialState);
   form.value.clear();
 };
+
+watch(
+  () => props.transaction,
+  (newTransaction) => {
+    if (newTransaction) {
+      Object.assign(state.value, {
+        type: newTransaction.type,
+        amount: newTransaction.amount,
+        created_at: newTransaction.created_at.split("T")[0],
+        description: newTransaction.description,
+        category: newTransaction.category,
+      });
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <UModal v-model="isOpen">
     <UCard>
-      <template #header> Add Transaction </template>
+      <template #header>
+        {{ isEditing ? "Edit" : "Add" }} Transaction
+      </template>
       <UForm :state="state" :schema="schema" ref="form" @submit.prevent="save">
         <UFormGroup
           :required="true"
@@ -115,6 +146,7 @@ const resetForm = () => {
           class="mb-4"
         >
           <USelect
+            :disabled="isEditing"
             :options="types"
             placeholder="Select type"
             v-model="state.type"
@@ -165,7 +197,13 @@ const resetForm = () => {
           />
         </UFormGroup>
 
-        <UButton type="submit" color="black" variant="solid" label="Save" :loading="isLoading" />
+        <UButton
+          type="submit"
+          color="black"
+          variant="solid"
+          label="Save"
+          :loading="isLoading"
+        />
       </UForm>
     </UCard>
   </UModal>

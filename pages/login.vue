@@ -4,9 +4,11 @@ const email = ref("");
 const pending = ref(false);
 const supabase = useSupabaseClient();
 const { toastSuccess, toastError } = useAppToast();
+const redirectUrl = useRuntimeConfig().public.baseUrl
 
 //check login
 //const { fetchUser } = useRedirectIfAuthenticated();
+//useRedirectIfAuthenticated();
 
 const handelLogin = async () => {
   pending.value = true;
@@ -14,15 +16,17 @@ const handelLogin = async () => {
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email.value,
       options: {
-        emailRedirectTo: "http://localhost:3000/confirm",
+        emailRedirectTo: `${redirectUrl}/confirm`,
       },
     });
 
     if(error) throw error;
 
+    success.value = true
+
   } catch (e) {
     toastError({
-      title: "Error updating profile",
+      title: 'Error authenticating',
       description: e.message,
     });
   } finally {
